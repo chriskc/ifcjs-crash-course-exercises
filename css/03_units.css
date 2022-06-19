@@ -1,0 +1,19 @@
+body{
+    width: 800px;
+    font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
+
+h1{
+    width: 20rem;
+    color: red;
+}
+
+h2{
+    width: 50%;
+    color: green;
+}
+
+h3{
+    width: 500px;
+    color: blue;
+}
