@@ -1,0 +1,88 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    overflow: visible;
+}
+
+canvas {
+    position: static;
+    top: 0;
+    left: 0;
+    outline: none;
+}
+
+input {
+    visibility: collapse;
+}
+
+button {
+    z-index: 1;
+    position: absolute;
+    margin: 0.5rem;
+    padding: 0.3rem;
+    background-color: white;
+    border: 1px solid gray;
+}
+
+button:hover {
+    background-color: black;
+    color: white;
+}
+
+.docs-link {
+    z-index: 1;
+    position: absolute;
+    right: 0;
+    margin: 0.5rem;
+    padding: 0.3rem;
+    text-decoration: none;
+    color: black;
+    border: 1px solid gray;
+}
+
+.container{
+    max-width: 80%;
+    border: 2px solid;
+    height: 800px;
+    margin: auto;
+    display: block;
+}
+
+.box{
+    position: relative;
+    border: 2px solid;
+    height: 100px;
+    width: 100px;
+    margin: 2rem;
+}
+
+.position{
+    position: absolute;
+    background-color: red;
+    height: 100px;
+    width: 100px;
+    margin: 3rem;
+}
+
+.menu{
+    position: sticky;
+    background-color: blueviolet;
+    color: aliceblue;
+    height: 100px;
+    top: 0px;
+}
+
+.docs-link {
+    z-index: 1;
+    position: absolute;
+    right: 0;
+    margin: 0.5rem;
+    padding: 0.3rem;
+    text-decoration: none;
+    color: black;
+    border: 1px solid gray;
+}
