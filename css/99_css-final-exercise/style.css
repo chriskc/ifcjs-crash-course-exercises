@@ -1,0 +1,57 @@
+iframe {
+  display:block;
+  width: 80%;
+  height: 600px;
+  overflow: hidden;
+  margin: 1rem auto;
+  border-width:1px;
+  border-color: rgb(226, 226, 226);
+}
+
+h1 {
+  text-align: center;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  flex-flow: wrap;
+  justify-content: center;
+  margin: 10rem 10rem;
+}
+
+.button {
+  padding: 1em;
+  margin: 1rem;
+  text-align: center;
+  font-family: monospace;
+  text-transform: uppercase;
+}
+
+.card {
+  width: 100px;
+  height: 100px;
+  padding: 1em;
+  margin: 1rem;
+  text-align: center;
+  background-color: cornflowerblue;
+  color: white;
+  border-radius: 1rem;
+  font-weight: 500;
+}
+
+.card:hover{
+    background-color: rgb(53, 84, 255);
+    color: white;
+    transition: all .3s ease-in-out;
+    font-weight: 1000;
+}
+
+.menu {
+  display: flex;
+  flex-direction: row;
+  flex-flow: wrap;
+  align-items: center;
+  justify-content: center;
+}

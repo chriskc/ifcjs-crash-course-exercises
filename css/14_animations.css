@@ -1,0 +1,35 @@
+
+
+div{
+    width: 100px;
+    height: 100px;
+    background-color: aqua;
+    margin: 1rem;
+    border-radius: 1rem;
+}
+
+.button:not(:hover){
+    transition: all 2s ease-in-out
+}
+
+.button:hover{
+    background-color: aquamarine;
+    border-radius: 2rem;
+    transition: all 2s ease-in-out;
+    transform: rotate(270deg);
+}
+
+.progress-bar{
+    animation: lengthen 2s infinite 1s ease-in-out;
+}
+
+@keyframes lengthen{
+    50%{
+        width: 1000px;
+        background-color: aquamarine;
+        border-radius: 5rem;
+    }
+    100%{
+        width: 100px;
+    }
+}
