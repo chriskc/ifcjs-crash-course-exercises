@@ -5,10 +5,13 @@ const person = {
 }
 
 console.log("hello world")
+console.log(person)
 console.log(person.name)
 console.log(person.age)
 
-const person = ["sup"]
-
+// person.["brother"] = "Jesse"
+person.brother = "Jesse"
 console.log(person)
+
+
 
