@@ -1,3 +1,4 @@
+
 console.log("hello world")
 
 let objects = [{
@@ -19,10 +20,21 @@ let objects = [{
         'name' : 'Roof',
         'dimensions' : 'IfcSlab',
         'ifcClass' : null
+    },
+    {
+        'name' : 'Roof2',
+        'dimensions' : 'IfcSlab',
+        'ifcClass' : null
     }
 ]
 
-// console.log(objects[0].name)
+console.log(objects[0].name)
 console.log(objects)
-console.log(objects.pop())
+// console.log(objects.pop())
+// console.log(objects)
+
+const filtered = objects.filter( n => n['name'][0].toLowerCase() === "r")
+console.log(filtered)
+
+
 

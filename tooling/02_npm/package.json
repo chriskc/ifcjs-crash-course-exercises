@@ -1,0 +1,15 @@
+{
+  "name": "ifcjs_npm_learn_env",
+  "version": "0.0.1",
+  "description": "Example project for ifcjs learning exercise. ",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "chriskc",
+  "license": "MIT",
+  "dependencies": {
+    "ifcjs": "^1.1.7",
+    "three": "^0.154.0"
+  }
+}
