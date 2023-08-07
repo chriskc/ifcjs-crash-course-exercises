@@ -16,6 +16,8 @@ import {
     Scene,
     BoxGeometry,
     MeshBasicMaterial,
+    MeshToonMaterial,
+    MeshPhongMaterial,
     Mesh,
     PerspectiveCamera,
     WebGLRenderer,
@@ -30,7 +32,9 @@ import {
     Sphere,
     Raycaster,
     MathUtils,
-    Clock
+    Clock,
+    DirectionalLight,
+    TextureLoader
 } from 'three';
 import CameraControls from 'camera-controls';
 
@@ -51,31 +55,84 @@ const subsetOfTHREE = {
   }
 };
 
+// -----------------------------------------------------
+// initialize scene
+// -----------------------------------------------------
 const canvas = document.getElementById('three-canvas');
-
-// create scene
 const scene = new Scene();
 
+// -----------------------------------------------------
+// get random image list
+// -----------------------------------------------------
+
+const loader = new TextureLoader();
+
+const images = [];
+for (let i = 0; i < 6; i++) {
+    images.push(`https://picsum.photos/200/300?random=${i}`)
+}
+
+const photoMaterial = [
+    new MeshBasicMaterial({ map: loader.load(images[0]) }),
+	new MeshBasicMaterial({ map: loader.load(images[1]) }),
+	new MeshBasicMaterial({ map: loader.load(images[2]) }),
+	new MeshBasicMaterial({ map: loader.load(images[3]) }),
+	new MeshBasicMaterial({ map: loader.load(images[4]) }),
+	new MeshBasicMaterial({ map: loader.load(images[5]) }),
+]
+
+console.log(photoMaterial)
+
+// -----------------------------------------------------
 // create cubes
+// -----------------------------------------------------
+
 const geometry = new BoxGeometry(0.5, 0.5, 0.5);
-const materialOrange = new MeshBasicMaterial({color: 'orange'});
-const materialBlue = new MeshBasicMaterial({color: 'blue'});
-const materialRed = new MeshBasicMaterial({color: 'red'});
+
+const materialOrange = new MeshBasicMaterial({
+    color: 'orange',
+    map: loader.load("./sample.jpg"),
+    transparent: true,
+    opacity: 0.8,
+});
+
+const materialBlue = new MeshToonMaterial({
+    color: 0x6030ff,
+    bumpMap: loader.load("./sample.jpg"),
+    bumpScale: 1,
+});
+
+const materialRed = new MeshPhongMaterial({
+    color: 0xff2211,
+    shininess: 150,
+    specular: "white"
+    // wireframe: true,
+    // wireframeLinewidth: 50
+});
+
 
 const cube = new Mesh(geometry, materialOrange);
+cube.position.x = 1
 scene.add(cube);
 
 const bigCube = new Mesh(geometry, materialBlue);
 bigCube.scale.set(2, 2, 2)
-bigCube.position.x = 2
+bigCube.position.x = 3
 scene.add(bigCube)
 
 const smallCube = new Mesh(geometry, materialRed);
-smallCube.position.x = -2
+smallCube.position.x = -0.75
 smallCube.scale.set(1.5, 1.5, 1.5)
 scene.add(smallCube)
 
+const photoCube = new Mesh(geometry, photoMaterial);
+photoCube.position.x = -3
+photoCube.scale.set(2, 2, 2)
+scene.add(photoCube)
+
+// -----------------------------------------------------
 // setup camera
+// -----------------------------------------------------
 const camera = new PerspectiveCamera(
     100,
     canvas.clientWidth / canvas.clientHeight
@@ -83,7 +140,9 @@ const camera = new PerspectiveCamera(
   camera.position.z = 3; // Z let's you move backwards and forwards. X is sideways, Y is upward and do
   scene.add(camera);
 
+// -----------------------------------------------------
 // setup view
+// -----------------------------------------------------
 const renderer = new WebGLRenderer( { canvas } )
 
 renderer.render(scene, camera);
@@ -92,7 +151,21 @@ renderer.setPixelRatio(2);
 // console.log(window.devicePixelRatio);
 // renderer.setPixelRatio(window.devicePixelRatio);
 
-//ensuring resizing window doesn't distort canvas
+// -----------------------------------------------------
+// create lights
+// -----------------------------------------------------
+
+const light = new DirectionalLight();
+light.position.set(1, 1, 1).normalize();
+scene.add(light)
+
+const light2 = new DirectionalLight();
+light2.position.set(-1, -3, -2).normalize();
+scene.add(light2)
+
+// -----------------------------------------------------
+// ensuring resizing window doesn't distort canvas
+// -----------------------------------------------------
 window.addEventListener('resize', () => {
     camera.aspect = canvas.clientWidth / canvas.clientHeight;
     camera.updateProjectionMatrix();
@@ -140,6 +213,8 @@ function animate() {
     bigCube.rotation.y += .0075;
     smallCube.rotation.x += .005;
     smallCube.rotation.y += .005;
+    photoCube.rotation.x += .02;
+    photoCube.rotation.y += .02;
     // controls.update(); // camera - orbit controls
     const delta = clock.getDelta(); // camera - cameracontrols lib
 	cameraControls.update( delta ); // camera - cameracontrols lib
