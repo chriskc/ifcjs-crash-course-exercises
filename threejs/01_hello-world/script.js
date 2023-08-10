@@ -36,6 +36,14 @@ import {
     DirectionalLight,
     TextureLoader,
     LoadingManager,
+    AmbientLight,
+    HemisphereLight,
+    DirectionalLightHelper,
+    AxesHelper,
+    GridHelper,
+    HemisphereLightHelper,
+    SphereGeometry,
+    Object3D,
 } from "three";
 import CameraControls from "camera-controls";
 
@@ -56,11 +64,19 @@ const subsetOfTHREE = {
     },
 };
 
+import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
+import gsap from "gsap";
+
 // -----------------------------------------------------
 // initialize scene
 // -----------------------------------------------------
 const canvas = document.getElementById("three-canvas");
 const scene = new Scene();
+
+const axesHelper = new AxesHelper();
+scene.add(axesHelper);
+const gridHelper = new GridHelper();
+scene.add(gridHelper);
 
 // -----------------------------------------------------
 // create cubes
@@ -68,12 +84,7 @@ const scene = new Scene();
 
 const geometry = new BoxGeometry(0.5, 0.5, 0.5);
 
-// loading progress bar
-const loadingManager = new LoadingManager();
-const loadingElem = document.querySelector("#loading");
-const progressBar = loadingElem.querySelector(".progressbar");
-
-const loader = new TextureLoader(loadingManager);
+const loader = new TextureLoader();
 
 const materialOrange = new MeshBasicMaterial({
     color: "orange",
@@ -89,7 +100,8 @@ const materialBlue = new MeshToonMaterial({
 });
 
 const materialRed = new MeshPhongMaterial({
-    color: 0xff2211,
+    color: 0xff5555,
+    // color: 0xffffff,
     shininess: 150,
     specular: "white",
     // wireframe: true,
@@ -120,27 +132,54 @@ for (let i = 0; i < 6; i++) {
     images.push(`https://picsum.photos/200/300?random=${i}`);
 }
 
+// loading progress bar
+const loadingManager = new LoadingManager();
+const loadingElem = document.querySelector("#loading");
+const progressBar = loadingElem.querySelector(".progressbar");
+
+const textureLoader = new TextureLoader(loadingManager);
 const photoMaterial = [
-    new MeshBasicMaterial({ map: loader.load(images[0]) }),
-    new MeshBasicMaterial({ map: loader.load(images[1]) }),
-    new MeshBasicMaterial({ map: loader.load(images[2]) }),
-    new MeshBasicMaterial({ map: loader.load(images[3]) }),
-    new MeshBasicMaterial({ map: loader.load(images[4]) }),
-    new MeshBasicMaterial({ map: loader.load(images[5]) }),
+    new MeshBasicMaterial({ map: textureLoader.load(images[0]) }),
+    new MeshBasicMaterial({ map: textureLoader.load(images[1]) }),
+    new MeshBasicMaterial({ map: textureLoader.load(images[2]) }),
+    new MeshBasicMaterial({ map: textureLoader.load(images[3]) }),
+    new MeshBasicMaterial({ map: textureLoader.load(images[4]) }),
+    new MeshBasicMaterial({ map: textureLoader.load(images[5]) }),
 ];
-const photoCube = new Mesh(geometry, photoMaterial);
-photoCube.position.x = -3;
-photoCube.scale.set(2, 2, 2);
 
-loadingManager.onLoad = () => {
-    loadingElem.style.display = "none";
-    scene.add(photoCube);
-};
+let photoCube;
 
-loadingManager.onProgress = (urlOfLastItemLoaded, itemsLoaded, itemsTotal) => {
-    const progress = itemsLoaded / itemsTotal;
-    progressBar.style.transform = `scaleX(${progress})`;
-};
+// -----------------------------------------------------
+// create cube collection
+// -----------------------------------------------------
+
+const boxCollection = new Object3D();
+scene.add(boxCollection);
+boxCollection.add(cube, smallCube, bigCube);
+
+// -----------------------------------------------------
+// create solar system
+// -----------------------------------------------------
+
+const sphereGeometry = new SphereGeometry(0.5);
+
+const solarSystem = new Object3D();
+scene.add(solarSystem);
+
+const sunMaterial = new MeshBasicMaterial({ color: "yellow" });
+const sunMesh = new Mesh(sphereGeometry, sunMaterial);
+solarSystem.add(sunMesh);
+
+const earthMaterial = new MeshBasicMaterial({ color: "blue" });
+const earthMesh = new Mesh(sphereGeometry, earthMaterial);
+earthMesh.position.set(5, 0, 0);
+sunMesh.add(earthMesh);
+
+const moonMaterial = new MeshBasicMaterial({ color: "white" });
+const moonMesh = new Mesh(sphereGeometry, moonMaterial);
+moonMesh.scale.set(0.5, 0.5, 0.5);
+moonMesh.position.set(1, 0, 0);
+earthMesh.add(moonMesh);
 
 // -----------------------------------------------------
 // setup camera
@@ -159,6 +198,9 @@ const renderer = new WebGLRenderer({ canvas });
 
 renderer.render(scene, camera);
 renderer.setPixelRatio(2);
+renderer.setClearColor(0xeeeeee, 1);
+// renderer.alpha = true; // true == transparent background
+
 // renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 // console.log(window.devicePixelRatio);
 // renderer.setPixelRatio(window.devicePixelRatio);
@@ -168,12 +210,24 @@ renderer.setPixelRatio(2);
 // -----------------------------------------------------
 
 const light = new DirectionalLight();
-light.position.set(1, 1, 1).normalize();
+const lightHelper = new DirectionalLightHelper(light, 1);
+light.position.set(1, 20, 1).normalize();
 scene.add(light);
+scene.add(lightHelper);
 
-const light2 = new DirectionalLight();
-light2.position.set(-1, -3, -2).normalize();
-scene.add(light2);
+// light.target = cube;
+
+// const light2 = new DirectionalLight();
+// light2.position.set(-1, -3, -2).normalize();
+// scene.add(light2);
+
+// const ambientLight = new AmbientLight(0xffffff, 0.2);
+// scene.add(ambientLight);
+
+const hemisphereLight = new HemisphereLight(0xffffff, 0x5533ff);
+scene.add(hemisphereLight);
+const hemisphereLightHelper = new HemisphereLightHelper(hemisphereLight);
+scene.add(hemisphereLightHelper);
 
 // -----------------------------------------------------
 // ensuring resizing window doesn't distort canvas
@@ -217,7 +271,7 @@ const clock = new Clock();
 const cameraControls = new CameraControls(camera, canvas);
 
 // animate cubes
-function animate() {
+function animateCubes() {
     cube.rotation.x += 0.01;
     cube.rotation.y += 0.01;
     bigCube.rotation.x += 0.0075;
@@ -229,9 +283,89 @@ function animate() {
     // controls.update(); // camera - orbit controls
     const delta = clock.getDelta(); // camera - cameracontrols lib
     cameraControls.update(delta); // camera - cameracontrols lib
-    requestAnimationFrame(animate);
+    requestAnimationFrame(animateCubes);
     renderer.render(scene, camera);
 }
-animate();
+
+function animateSolarSystem() {
+    sunMesh.rotation.y += 0.005;
+    earthMesh.rotation.y += 0.005;
+
+    const delta = clock.getDelta(); // camera - cameracontrols lib
+    cameraControls.update(delta); // camera - cameracontrols lib
+    requestAnimationFrame(animateSolarSystem);
+    renderer.render(scene, camera);
+}
+
+animateSolarSystem();
+
+loadingManager.onLoad = () => {
+    loadingElem.style.display = "none";
+
+    setTimeout(() => {
+        photoCube = new Mesh(geometry, photoMaterial);
+        photoCube.position.x = -3;
+        photoCube.scale.set(2, 2, 2);
+        scene.add(photoCube);
+        animateCubes();
+
+        boxCollection.add(photoCube);
+        boxCollection.position.set(0, 5, 0);
+        // move code into here for timeout
+    }, 3000); // simulate an artificial delay
+};
+
+loadingManager.onProgress = (urlOfLastItemLoaded, itemsLoaded, itemsTotal) => {
+    const progress = itemsLoaded / itemsTotal;
+    progressBar.style.transform = `scaleX(${progress})`;
+};
+
+// animate();
 
 // document.body.appendChild( renderer.domElement );
+
+// -----------------------------------------------------
+// initialize gui -- for debugging
+// -----------------------------------------------------
+
+const gui = new GUI();
+
+const functionParam = {
+    spin: () => {
+        gsap.to(cube.rotation, { y: cube.rotation.y + 10, duration: 1 });
+        gsap.to(smallCube.rotation, {
+            y: smallCube.rotation.y + 10,
+            duration: 1,
+        });
+        gsap.to(bigCube.rotation, { y: bigCube.rotation.y + 10, duration: 1 });
+        gsap.to(photoCube.rotation, {
+            y: photoCube.rotation.y + 10,
+            duration: 1,
+        });
+    },
+};
+
+const boxCollectionControls = gui.addFolder("boxCollection");
+boxCollectionControls
+    .add(boxCollection.position, "y")
+    .min(-10)
+    .max(10)
+    .step(0.01)
+    .name("boxCollection Y-axis");
+boxCollectionControls
+    .add(boxCollection, "visible")
+    .name("boxCollection visible");
+boxCollectionControls.add(functionParam, "spin").name("spin");
+
+const solarSystemControls = gui.addFolder("solarSystem");
+solarSystemControls
+    .add(solarSystem.rotation, "z")
+    .min(-1)
+    .max(1)
+    .step(0.01)
+    .name("z-rotation");
+
+const colorParam = { color: 0xffffff };
+solarSystemControls.addColor(colorParam, "color").onChange(() => {
+    moonMesh.material.color.set(colorParam.color);
+});
