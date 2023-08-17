@@ -93,11 +93,14 @@ scene.add(gridHelper);
 // -----------------------------------------------------
 
 const modelLoader = new GLTFLoader();
+const modelLoadingElem = document.querySelector("#loader-container");
+const modelLoadingText = modelLoadingElem.querySelector("p");
 
 modelLoader.load(
     "../GLTF/police_station.glb",
 
     (gltf) => {
+        modelLoadingElem.style.display = "none";
         const model = gltf.scene;
         scene.add(model);
         model.position.setX(30);
@@ -105,7 +108,9 @@ modelLoader.load(
     },
 
     (progress) => {
-        // add progress bar
+        const current = (progress.loaded / progress.total) * 100;
+        const formatted = Math.trunc(current * 100) / 100;
+        modelLoadingText.textContent = `Loading: ${formatted}%`;
     },
 
     (error) => {
