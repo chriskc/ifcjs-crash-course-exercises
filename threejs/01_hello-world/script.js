@@ -44,6 +44,14 @@ import {
     HemisphereLightHelper,
     SphereGeometry,
     Object3D,
+    Shape,
+    ExtrudeGeometry,
+    EdgesGeometry,
+    LineBasicMaterial,
+    LineSegments,
+    WireframeGeometry,
+    PointsMaterial,
+    Points,
 } from "three";
 import CameraControls from "camera-controls";
 
@@ -67,6 +75,8 @@ const subsetOfTHREE = {
 import GUI from "three/examples/jsm/libs/lil-gui.module.min.js";
 import gsap from "gsap";
 
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+
 // -----------------------------------------------------
 // initialize scene
 // -----------------------------------------------------
@@ -77,6 +87,31 @@ const axesHelper = new AxesHelper();
 scene.add(axesHelper);
 const gridHelper = new GridHelper();
 scene.add(gridHelper);
+
+// -----------------------------------------------------
+// load building
+// -----------------------------------------------------
+
+const modelLoader = new GLTFLoader();
+
+modelLoader.load(
+    "../GLTF/police_station.glb",
+
+    (gltf) => {
+        const model = gltf.scene;
+        scene.add(model);
+        model.position.setX(30);
+        model.position.setY(-5);
+    },
+
+    (progress) => {
+        // add progress bar
+    },
+
+    (error) => {
+        console.log("Building model did not load. Error: ", error);
+    }
+);
 
 // -----------------------------------------------------
 // create cubes
@@ -91,6 +126,9 @@ const materialOrange = new MeshBasicMaterial({
     map: loader.load("./sample.jpg"),
     transparent: true,
     opacity: 0.8,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1,
 });
 
 const materialBlue = new MeshToonMaterial({
@@ -111,6 +149,11 @@ const materialRed = new MeshPhongMaterial({
 const cube = new Mesh(geometry, materialOrange);
 cube.position.x = 1;
 scene.add(cube);
+
+const wireCube = new EdgesGeometry(cube.geometry);
+const materialLine = new LineBasicMaterial({ color: 0x0000ff, linewidth: 3 });
+const wireframe = new LineSegments(wireCube, materialLine);
+cube.add(wireframe);
 
 const bigCube = new Mesh(geometry, materialBlue);
 bigCube.scale.set(2, 2, 2);
@@ -182,6 +225,72 @@ moonMesh.position.set(1, 0, 0);
 earthMesh.add(moonMesh);
 
 // -----------------------------------------------------
+// create stars
+// -----------------------------------------------------
+
+const radius = 10;
+const widthSegments = 24;
+const heightSegments = 28;
+const points = new SphereGeometry(radius, widthSegments, heightSegments);
+
+const pointsMaterial = new PointsMaterial({
+    color: 0xffffff,
+    size: 0.1,
+    sizeAttenuation: true,
+});
+
+const stars = new Points(points, pointsMaterial);
+scene.add(stars);
+
+// -----------------------------------------------------
+// create squiggly extrusion
+// -----------------------------------------------------
+
+const squiggle = new Shape();
+const x = 5;
+const y = 2;
+
+squiggle.moveTo(x, y);
+
+squiggle.bezierCurveTo(
+    x + 2,
+    y + 1,
+    x + 3,
+    y + 3,
+    x + 2,
+    y + 2,
+    x + 2,
+    y + 2,
+    x + 1,
+    y + 0.5,
+    x,
+    y
+);
+
+const extrudeSettings = {
+    steps: 2,
+    depth: 1,
+    bevelEnabled: true,
+    bevelThickness: 0.25,
+    bevelSize: 0.5,
+    bevelOffset: 0,
+    bevelSegments: 1,
+};
+
+const squiggleGeometry = new ExtrudeGeometry(squiggle, extrudeSettings);
+const squiggleMaterial = new MeshPhongMaterial({ color: 0xffffff });
+const squiggleMesh = new Mesh(squiggleGeometry, squiggleMaterial);
+scene.add(squiggleMesh);
+
+const squiggleWireframe = new WireframeGeometry(squiggleGeometry);
+const squiggleLine = new LineSegments(squiggleWireframe);
+squiggleLine.material.depthTest = false;
+squiggleLine.material.opacity = 0.25;
+squiggleLine.material.transparent = true;
+
+scene.add(squiggleLine);
+
+// -----------------------------------------------------
 // setup camera
 // -----------------------------------------------------
 const camera = new PerspectiveCamera(
@@ -198,7 +307,9 @@ const renderer = new WebGLRenderer({ canvas });
 
 renderer.render(scene, camera);
 renderer.setPixelRatio(2);
-renderer.setClearColor(0xeeeeee, 1);
+
+// // background color
+// renderer.setClearColor(0xeeeeee, 1);
 // renderer.alpha = true; // true == transparent background
 
 // renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
