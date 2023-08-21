@@ -153,6 +153,7 @@ const materialRed = new MeshPhongMaterial({
 });
 
 const materialHover = new MeshLambertMaterial({ color: 0x0000ff });
+const materialHover2 = new MeshLambertMaterial({ color: 0x00aaff });
 
 const cube = new Mesh(geometry, materialOrange);
 cube.position.x = 1;
@@ -177,7 +178,7 @@ const hoverCube = new Mesh(geometry, materialHover);
 hoverCube.position.y = -1;
 scene.add(hoverCube);
 
-const hoverCube2 = new Mesh(geometry, materialHover);
+const hoverCube2 = new Mesh(geometry, materialHover2);
 hoverCube2.position.y = -2;
 scene.add(hoverCube2);
 
@@ -377,12 +378,6 @@ scene.add(hemisphereLightHelper);
 // create hover-select
 // -----------------------------------------------------
 
-// const objectsToTest = {
-//     [cube.uuid]: { object: cube, color: blue },
-//     [cube2.uuid]: { object: cube2, color: green },
-//     [cube3.uuid]: { object: cube3, color: red },
-// };
-
 // const objectsArray = Object.values(objectsToTest).map((item) => item.object);
 
 const raycaster = new Raycaster();
@@ -391,42 +386,33 @@ let previousSelectedUuid;
 
 const objectsArray = [hoverCube, hoverCube2];
 
-// let objectsArray = [];
-// for (const cube of cubeCollection.children) {
-//     objectsArray.push(cube);
-// }
-// console.log(cubeCollection);
-// console.log(objectsArray);
-
 // iterate to create an object
 // -------------------------
 let objectsToTest = {};
 for (const object of objectsArray) {
     objectsToTest[object.uuid] = {
         object: object,
-        color: object.material.color,
+        color:
+            "0x" + object.material.color.getHex().toString(16).padStart(6, "0"),
     };
 }
-console.log(objectsToTest);
 
-// iterate to create a list
-// -------------------------
-// let objectsToTest = [];
-// for (const object of objectsArray) {
-//     objectsToTest.push({
-//         uuid: object.uuid,
-//         object: object,
-//         color: object.material.color,
-//     });
-// }
+// for testing against code from exercise
+// -----------------------------------------
+// const objectsToTest2 = {
+//     [hoverCube.uuid]: { object: hoverCube, color: "blue" },
+//     [hoverCube2.uuid]: { object: hoverCube2, color: "green" },
+// };
+
+console.log(objectsToTest);
+// console.log(objectsToTest2);
 
 function resetPreviousSelection() {
     if (previousSelectedUuid === undefined) return;
     const previousSelected = objectsToTest[previousSelectedUuid];
-    if (previousSelected) {
-        // previousSelected.object.material.color.set(previousSelected.color);
-        previousSelected.object.material.color.set("blue");
-    }
+    let previousColor = previousSelected.color;
+    previousSelected.object.material.color.setHex(previousColor);
+    previousSelectedUuid = undefined; // needed this otherwise stuck on first geometry
 }
 
 window.addEventListener("mousemove", (event) => {
@@ -445,10 +431,11 @@ window.addEventListener("mousemove", (event) => {
 
     // if raycaster hits something
     const firstIntersection = intersects[0];
-    console.log(firstIntersection.object);
 
     const isNotPrevious =
         previousSelectedUuid !== firstIntersection.object.uuid;
+
+    console.log(previousSelectedUuid !== firstIntersection.object.uuid);
 
     // if raycaster no
     if (previousSelectedUuid !== undefined && isNotPrevious) {
