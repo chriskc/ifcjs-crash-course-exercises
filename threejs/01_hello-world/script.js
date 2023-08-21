@@ -1,17 +1,3 @@
-// // camera - mousemoves control
-// import {
-//     BoxGeometry,
-//     Mesh,
-//     MeshBasicMaterial,
-//     PerspectiveCamera,
-//     Scene,
-//     WebGLRenderer,
-//     Vector2
-// } from 'three';
-
-// // camera - orbit controls
-// import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-
 import {
     Scene,
     BoxGeometry,
@@ -78,6 +64,11 @@ import gsap from "gsap";
 
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
+import {
+    CSS2DRenderer,
+    CSS2DObject,
+} from "three/examples/jsm/renderers/CSS2DRenderer.js";
+
 // -----------------------------------------------------
 // initialize scene
 // -----------------------------------------------------
@@ -88,6 +79,29 @@ const axesHelper = new AxesHelper();
 scene.add(axesHelper);
 const gridHelper = new GridHelper();
 scene.add(gridHelper);
+
+// -----------------------------------------------------
+// setup 2d renderer
+// -----------------------------------------------------
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(window.innerWidth, window.innerHeight);
+labelRenderer.domElement.style.position = "absolute";
+labelRenderer.domElement.style.pointerEvents = "none";
+labelRenderer.domElement.style.top = "0";
+document.body.appendChild(labelRenderer.domElement);
+
+const base = document.createElement("div");
+base.className = "base-label";
+
+const deleteButton = document.createElement("button");
+deleteButton.textContent = "X";
+deleteButton.className = "button hidden";
+base.appendChild(deleteButton);
+
+const baseObject = new CSS2DObject(base);
+baseObject.position.set(0, 1, 0);
+scene.add(baseObject);
 
 // -----------------------------------------------------
 // load building
@@ -327,14 +341,6 @@ const renderer = new WebGLRenderer({ canvas });
 renderer.render(scene, camera);
 renderer.setPixelRatio(2);
 
-// // background color
-// renderer.setClearColor(0xeeeeee, 1);
-// renderer.alpha = true; // true == transparent background
-
-// renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-// console.log(window.devicePixelRatio);
-// renderer.setPixelRatio(window.devicePixelRatio);
-
 // -----------------------------------------------------
 // create lights
 // -----------------------------------------------------
@@ -344,15 +350,6 @@ const lightHelper = new DirectionalLightHelper(light, 1);
 light.position.set(1, 20, 1).normalize();
 scene.add(light);
 scene.add(lightHelper);
-
-// light.target = cube;
-
-// const light2 = new DirectionalLight();
-// light2.position.set(-1, -3, -2).normalize();
-// scene.add(light2);
-
-// const ambientLight = new AmbientLight(0xffffff, 0.2);
-// scene.add(ambientLight);
 
 const hemisphereLight = new HemisphereLight(0xffffff, 0x5533ff);
 scene.add(hemisphereLight);
@@ -370,9 +367,7 @@ scene.add(hemisphereLightHelper);
 // raycaster.set(rayOrigin, rayDirection);
 
 // const intersect = raycaster.intersectObject(cube);
-// console.log(intersect);
 // const intersects = raycaster.intersectObjects([cube, bigCube, smallCube]);
-// console.log(intersects);
 
 // -----------------------------------------------------
 // create hover-select
@@ -418,26 +413,24 @@ function resetPreviousSelection() {
 window.addEventListener("mousemove", (event) => {
     mouse.x = (event.clientX / canvas.clientWidth) * 2 - 1;
     mouse.y = (event.clientY / canvas.clientHeight) * -2 + 1;
-    // console.log(mouse);
 
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObjects(objectsArray);
 
     // if raycaster hits nothing reset
+    // -------------------------------------
     if (!intersects.length) {
         resetPreviousSelection();
         return;
     }
 
     // if raycaster hits something
+    // -------------------------------------
     const firstIntersection = intersects[0];
 
     const isNotPrevious =
         previousSelectedUuid !== firstIntersection.object.uuid;
 
-    console.log(previousSelectedUuid !== firstIntersection.object.uuid);
-
-    // if raycaster no
     if (previousSelectedUuid !== undefined && isNotPrevious) {
         resetPreviousSelection();
         return;
@@ -453,33 +446,8 @@ window.addEventListener("resize", () => {
     camera.aspect = canvas.clientWidth / canvas.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+    labelRenderer.setSize(canvas.clientWidth, canvas.clientHeight);
 });
-
-//// camera - mousemoves control
-// window.addEventListener("mousemove", (event) => {
-//     console.log(getMousePosition(event))
-//     const position = getMousePosition(event);
-//     camera.position.x = Math.sin(position.x * Math.PI * 2) * 3;
-//     camera.position.z = Math.cos(position.x * Math.PI * 2) * 3;
-//     camera.position.y = position.y;
-//     camera.lookAt(cube.position);
-// })
-
-// function getMousePosition(event) {
-//     const position = new Vector2(0,1);
-//     const bounds = canvas.getBoundingClientRect();
-//     position.x =((event.clientX - bounds.left) / (bounds.right - bounds.left)) * 2 - 1;
-//     position.y = -((event.clientY - bounds.top) / (bounds.bottom - bounds.top)) * 2 + 1;
-//     console.log(`mouse x = + ${position.x}`)
-//     console.log(`mouse y = + ${position.y}`)
-
-//     return position;
-//   }
-
-// // camera - orbit controls
-// // left:orbit | right:pan | middle:zoom
-// const controls = new OrbitControls(camera, canvas);
-// controls.enableDamping = true;
 
 // camera - cameracontrols lib
 // left:orbit | right:pan | middle:zoom
@@ -502,6 +470,7 @@ function animateCubes() {
     cameraControls.update(delta); // camera - cameracontrols lib
     requestAnimationFrame(animateCubes);
     renderer.render(scene, camera);
+    labelRenderer.render(scene, camera);
 }
 
 function animateSolarSystem() {
@@ -536,10 +505,6 @@ loadingManager.onProgress = (urlOfLastItemLoaded, itemsLoaded, itemsTotal) => {
     const progress = itemsLoaded / itemsTotal;
     progressBar.style.transform = `scaleX(${progress})`;
 };
-
-// animate();
-
-// document.body.appendChild( renderer.domElement );
 
 // -----------------------------------------------------
 // initialize gui -- for debugging
