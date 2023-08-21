@@ -36768,6 +36768,116 @@ class MeshToonMaterial extends Material {
 
 }
 
+class MeshLambertMaterial extends Material {
+
+	constructor( parameters ) {
+
+		super();
+
+		this.isMeshLambertMaterial = true;
+
+		this.type = 'MeshLambertMaterial';
+
+		this.color = new Color( 0xffffff ); // diffuse
+
+		this.map = null;
+
+		this.lightMap = null;
+		this.lightMapIntensity = 1.0;
+
+		this.aoMap = null;
+		this.aoMapIntensity = 1.0;
+
+		this.emissive = new Color( 0x000000 );
+		this.emissiveIntensity = 1.0;
+		this.emissiveMap = null;
+
+		this.bumpMap = null;
+		this.bumpScale = 1;
+
+		this.normalMap = null;
+		this.normalMapType = TangentSpaceNormalMap;
+		this.normalScale = new Vector2( 1, 1 );
+
+		this.displacementMap = null;
+		this.displacementScale = 1;
+		this.displacementBias = 0;
+
+		this.specularMap = null;
+
+		this.alphaMap = null;
+
+		this.envMap = null;
+		this.combine = MultiplyOperation;
+		this.reflectivity = 1;
+		this.refractionRatio = 0.98;
+
+		this.wireframe = false;
+		this.wireframeLinewidth = 1;
+		this.wireframeLinecap = 'round';
+		this.wireframeLinejoin = 'round';
+
+		this.flatShading = false;
+
+		this.fog = true;
+
+		this.setValues( parameters );
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.color.copy( source.color );
+
+		this.map = source.map;
+
+		this.lightMap = source.lightMap;
+		this.lightMapIntensity = source.lightMapIntensity;
+
+		this.aoMap = source.aoMap;
+		this.aoMapIntensity = source.aoMapIntensity;
+
+		this.emissive.copy( source.emissive );
+		this.emissiveMap = source.emissiveMap;
+		this.emissiveIntensity = source.emissiveIntensity;
+
+		this.bumpMap = source.bumpMap;
+		this.bumpScale = source.bumpScale;
+
+		this.normalMap = source.normalMap;
+		this.normalMapType = source.normalMapType;
+		this.normalScale.copy( source.normalScale );
+
+		this.displacementMap = source.displacementMap;
+		this.displacementScale = source.displacementScale;
+		this.displacementBias = source.displacementBias;
+
+		this.specularMap = source.specularMap;
+
+		this.alphaMap = source.alphaMap;
+
+		this.envMap = source.envMap;
+		this.combine = source.combine;
+		this.reflectivity = source.reflectivity;
+		this.refractionRatio = source.refractionRatio;
+
+		this.wireframe = source.wireframe;
+		this.wireframeLinewidth = source.wireframeLinewidth;
+		this.wireframeLinecap = source.wireframeLinecap;
+		this.wireframeLinejoin = source.wireframeLinejoin;
+
+		this.flatShading = source.flatShading;
+
+		this.fog = source.fog;
+
+		return this;
+
+	}
+
+}
+
 // same as Array.prototype.slice, but also works on typed arrays
 function arraySlice( array, from, to ) {
 
@@ -54264,7 +54374,7 @@ const modelLoadingElem = document.querySelector("#loader-container");
 const modelLoadingText = modelLoadingElem.querySelector("p");
 
 modelLoader.load(
-    "../GLTF/police_station.glb",
+    "./GLTF/police_station.glb",
 
     (gltf) => {
         modelLoadingElem.style.display = "none";
@@ -54318,6 +54428,8 @@ const materialRed = new MeshPhongMaterial({
     // wireframeLinewidth: 50
 });
 
+const materialHover = new MeshLambertMaterial({ color: 0x0000ff });
+
 const cube = new Mesh(geometry, materialOrange);
 cube.position.x = 1;
 scene.add(cube);
@@ -54336,6 +54448,14 @@ const smallCube = new Mesh(geometry, materialRed);
 smallCube.position.x = -0.75;
 smallCube.scale.set(1.5, 1.5, 1.5);
 scene.add(smallCube);
+
+const hoverCube = new Mesh(geometry, materialHover);
+hoverCube.position.y = -1;
+scene.add(hoverCube);
+
+const hoverCube2 = new Mesh(geometry, materialHover);
+hoverCube2.position.y = -2;
+scene.add(hoverCube2);
 
 // -----------------------------------------------------
 // create photo cube
@@ -54368,9 +54488,9 @@ let photoCube;
 // create cube collection
 // -----------------------------------------------------
 
-const boxCollection = new Object3D();
-scene.add(boxCollection);
-boxCollection.add(cube, smallCube, bigCube);
+const cubeCollection = new Object3D();
+scene.add(cubeCollection);
+cubeCollection.add(cube, smallCube, bigCube);
 
 // -----------------------------------------------------
 // create solar system
@@ -54469,6 +54589,8 @@ const camera = new PerspectiveCamera(
     100,
     canvas.clientWidth / canvas.clientHeight
 );
+camera.position.x = -6;
+camera.position.y = 1;
 camera.position.z = 3; // Z let's you move backwards and forwards. X is sideways, Y is upward and do
 scene.add(camera);
 
@@ -54511,6 +54633,107 @@ const hemisphereLight = new HemisphereLight(0xffffff, 0x5533ff);
 scene.add(hemisphereLight);
 const hemisphereLightHelper = new HemisphereLightHelper(hemisphereLight);
 scene.add(hemisphereLightHelper);
+
+// -----------------------------------------------------
+// create raycaster
+// -----------------------------------------------------
+
+// const raycaster = new Raycaster();
+// const rayOrigin = new Vector3(-3, 0, 0);
+// const rayDirection = new Vector3(10, 0, 0);
+// rayDirection.normalize();
+// raycaster.set(rayOrigin, rayDirection);
+
+// const intersect = raycaster.intersectObject(cube);
+// console.log(intersect);
+// const intersects = raycaster.intersectObjects([cube, bigCube, smallCube]);
+// console.log(intersects);
+
+// -----------------------------------------------------
+// create hover-select
+// -----------------------------------------------------
+
+// const objectsToTest = {
+//     [cube.uuid]: { object: cube, color: blue },
+//     [cube2.uuid]: { object: cube2, color: green },
+//     [cube3.uuid]: { object: cube3, color: red },
+// };
+
+// const objectsArray = Object.values(objectsToTest).map((item) => item.object);
+
+const raycaster = new Raycaster();
+const mouse = new Vector2();
+let previousSelectedUuid;
+
+const objectsArray = [hoverCube, hoverCube2];
+
+// let objectsArray = [];
+// for (const cube of cubeCollection.children) {
+//     objectsArray.push(cube);
+// }
+// console.log(cubeCollection);
+// console.log(objectsArray);
+
+// iterate to create an object
+// -------------------------
+let objectsToTest = {};
+for (const object of objectsArray) {
+    objectsToTest[object.uuid] = {
+        object: object,
+        color: object.material.color,
+    };
+}
+console.log(objectsToTest);
+
+// iterate to create a list
+// -------------------------
+// let objectsToTest = [];
+// for (const object of objectsArray) {
+//     objectsToTest.push({
+//         uuid: object.uuid,
+//         object: object,
+//         color: object.material.color,
+//     });
+// }
+
+function resetPreviousSelection() {
+    if (previousSelectedUuid === undefined) return;
+    const previousSelected = objectsToTest[previousSelectedUuid];
+    if (previousSelected) {
+        // previousSelected.object.material.color.set(previousSelected.color);
+        previousSelected.object.material.color.set("blue");
+    }
+}
+
+window.addEventListener("mousemove", (event) => {
+    mouse.x = (event.clientX / canvas.clientWidth) * 2 - 1;
+    mouse.y = (event.clientY / canvas.clientHeight) * -2 + 1;
+    // console.log(mouse);
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(objectsArray);
+
+    // if raycaster hits nothing reset
+    if (!intersects.length) {
+        resetPreviousSelection();
+        return;
+    }
+
+    // if raycaster hits something
+    const firstIntersection = intersects[0];
+    console.log(firstIntersection.object);
+
+    const isNotPrevious =
+        previousSelectedUuid !== firstIntersection.object.uuid;
+
+    // if raycaster no
+    if (previousSelectedUuid !== undefined && isNotPrevious) {
+        resetPreviousSelection();
+        return;
+    }
+    previousSelectedUuid = firstIntersection.object.uuid;
+    firstIntersection.object.material.color.set("orange");
+});
 
 // -----------------------------------------------------
 // ensuring resizing window doesn't distort canvas
@@ -54592,8 +54815,8 @@ loadingManager.onLoad = () => {
         scene.add(photoCube);
         animateCubes();
 
-        boxCollection.add(photoCube);
-        boxCollection.position.set(0, 5, 0);
+        cubeCollection.add(photoCube);
+        cubeCollection.position.set(0, 5, 0);
         // move code into here for timeout
     }, 3000); // simulate an artificial delay
 };
@@ -54628,16 +54851,16 @@ const functionParam = {
     },
 };
 
-const boxCollectionControls = gui.addFolder("boxCollection");
+const boxCollectionControls = gui.addFolder("cubeCollection");
 boxCollectionControls
-    .add(boxCollection.position, "y")
+    .add(cubeCollection.position, "y")
     .min(-10)
     .max(10)
     .step(0.01)
-    .name("boxCollection Y-axis");
+    .name("cubeCollection Y-axis");
 boxCollectionControls
-    .add(boxCollection, "visible")
-    .name("boxCollection visible");
+    .add(cubeCollection, "visible")
+    .name("cubeCollection visible");
 boxCollectionControls.add(functionParam, "spin").name("spin");
 
 const solarSystemControls = gui.addFolder("solarSystem");
