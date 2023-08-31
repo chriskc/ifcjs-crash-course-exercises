@@ -69,17 +69,17 @@ labelRenderer.domElement.style.pointerEvents = "none";
 labelRenderer.domElement.style.top = "0";
 document.body.appendChild(labelRenderer.domElement);
 
-const base = document.createElement("div");
-base.className = "base-label";
+// const base = document.createElement("div");
+// base.className = "base-label";
 
-const deleteButton = document.createElement("button");
-deleteButton.textContent = "X";
-deleteButton.className = "button hidden";
-base.appendChild(deleteButton);
+// const deleteButton = document.createElement("button");
+// deleteButton.textContent = "X";
+// deleteButton.className = "button hidden";
+// base.appendChild(deleteButton);
 
-const baseObject = new CSS2DObject(base);
-baseObject.position.set(0, 1, 0);
-scene.add(baseObject);
+// const baseObject = new CSS2DObject(base);
+// baseObject.position.set(0, 1, 0);
+// scene.add(baseObject);
 
 // -----------------------------------------------------
 // load building
@@ -89,12 +89,14 @@ const modelLoader = new GLTFLoader();
 const modelLoadingElem = document.querySelector("#loader-container");
 const modelLoadingText = modelLoadingElem.querySelector("p");
 
+let model;
+
 modelLoader.load(
     "./GLTF/police_station.glb",
 
     (gltf) => {
         modelLoadingElem.style.display = "none";
-        const model = gltf.scene;
+        model = gltf.scene;
         scene.add(model);
         // model.position.setZ(5);
         model.position.setY(-8);
@@ -131,7 +133,7 @@ scene.add(camera);
 const renderer = new WebGLRenderer({ canvas });
 
 renderer.render(scene, camera);
-renderer.setPixelRatio(2);
+renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); // this renders crisp on load
 
 // -----------------------------------------------------
@@ -139,28 +141,59 @@ renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); // this render
 // -----------------------------------------------------
 
 const light = new DirectionalLight();
-const lightHelper = new DirectionalLightHelper(light, 1);
 light.position.set(1, 20, 1).normalize();
 scene.add(light);
+// const lightHelper = new DirectionalLightHelper(light, 1);
 // scene.add(lightHelper);
 
 const hemisphereLight = new HemisphereLight(0xffffff, 0x5533ff);
 scene.add(hemisphereLight);
-const hemisphereLightHelper = new HemisphereLightHelper(hemisphereLight);
+// const hemisphereLightHelper = new HemisphereLightHelper(hemisphereLight);
 // scene.add(hemisphereLightHelper);
 
 // -----------------------------------------------------
 // create raycaster
 // -----------------------------------------------------
 
-// const raycaster = new Raycaster();
-// const rayOrigin = new Vector3(-3, 0, 0);
-// const rayDirection = new Vector3(10, 0, 0);
-// rayDirection.normalize();
-// raycaster.set(rayOrigin, rayDirection);
+const raycaster = new Raycaster();
+const mouse = new Vector2();
 
-// const intersect = raycaster.intersectObject(cube);
-// const intersects = raycaster.intersectObjects([cube, bigCube, smallCube]);
+window.addEventListener("dblclick", (event) => {
+    mouse.x = (event.clientX / canvas.clientWidth) * 2 - 1;
+    mouse.y = (event.clientY / canvas.clientHeight) * -2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(model);
+    const location = intersects[0].point;
+
+    const result = window.prompt("Add comment:");
+
+    console.log(location);
+
+    const base = document.createElement("div");
+    base.className = "base-label";
+
+    const deleteButton = document.createElement("button");
+    deleteButton.textContent = "X";
+    deleteButton.className = "delete-button hidden";
+    base.appendChild(deleteButton);
+
+    const postit = document.createElement("div");
+    postit.className = "label";
+    postit.textContent = result;
+    base.appendChild(postit);
+
+    const ifcJsTitle = new CSS2DObject(base);
+    ifcJsTitle.position.copy(location);
+    scene.add(ifcJsTitle);
+    // console.log(ifcJsTitle);
+
+    deleteButton.onclick = () => {
+        base.remove();
+        ifcJsTitle.element = null;
+        ifcJsTitle.removeFromParent();
+    };
+});
 
 // -----------------------------------------------------
 // resize canvas with client window

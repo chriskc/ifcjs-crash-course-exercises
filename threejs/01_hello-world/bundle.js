@@ -31777,353 +31777,6 @@ function testPoint( point, index, localThresholdSq, matrixWorld, raycaster, inte
 
 }
 
-class PolyhedronGeometry extends BufferGeometry {
-
-	constructor( vertices = [], indices = [], radius = 1, detail = 0 ) {
-
-		super();
-
-		this.type = 'PolyhedronGeometry';
-
-		this.parameters = {
-			vertices: vertices,
-			indices: indices,
-			radius: radius,
-			detail: detail
-		};
-
-		// default buffer data
-
-		const vertexBuffer = [];
-		const uvBuffer = [];
-
-		// the subdivision creates the vertex buffer data
-
-		subdivide( detail );
-
-		// all vertices should lie on a conceptual sphere with a given radius
-
-		applyRadius( radius );
-
-		// finally, create the uv data
-
-		generateUVs();
-
-		// build non-indexed geometry
-
-		this.setAttribute( 'position', new Float32BufferAttribute( vertexBuffer, 3 ) );
-		this.setAttribute( 'normal', new Float32BufferAttribute( vertexBuffer.slice(), 3 ) );
-		this.setAttribute( 'uv', new Float32BufferAttribute( uvBuffer, 2 ) );
-
-		if ( detail === 0 ) {
-
-			this.computeVertexNormals(); // flat normals
-
-		} else {
-
-			this.normalizeNormals(); // smooth normals
-
-		}
-
-		// helper functions
-
-		function subdivide( detail ) {
-
-			const a = new Vector3();
-			const b = new Vector3();
-			const c = new Vector3();
-
-			// iterate over all faces and apply a subdivision with the given detail value
-
-			for ( let i = 0; i < indices.length; i += 3 ) {
-
-				// get the vertices of the face
-
-				getVertexByIndex( indices[ i + 0 ], a );
-				getVertexByIndex( indices[ i + 1 ], b );
-				getVertexByIndex( indices[ i + 2 ], c );
-
-				// perform subdivision
-
-				subdivideFace( a, b, c, detail );
-
-			}
-
-		}
-
-		function subdivideFace( a, b, c, detail ) {
-
-			const cols = detail + 1;
-
-			// we use this multidimensional array as a data structure for creating the subdivision
-
-			const v = [];
-
-			// construct all of the vertices for this subdivision
-
-			for ( let i = 0; i <= cols; i ++ ) {
-
-				v[ i ] = [];
-
-				const aj = a.clone().lerp( c, i / cols );
-				const bj = b.clone().lerp( c, i / cols );
-
-				const rows = cols - i;
-
-				for ( let j = 0; j <= rows; j ++ ) {
-
-					if ( j === 0 && i === cols ) {
-
-						v[ i ][ j ] = aj;
-
-					} else {
-
-						v[ i ][ j ] = aj.clone().lerp( bj, j / rows );
-
-					}
-
-				}
-
-			}
-
-			// construct all of the faces
-
-			for ( let i = 0; i < cols; i ++ ) {
-
-				for ( let j = 0; j < 2 * ( cols - i ) - 1; j ++ ) {
-
-					const k = Math.floor( j / 2 );
-
-					if ( j % 2 === 0 ) {
-
-						pushVertex( v[ i ][ k + 1 ] );
-						pushVertex( v[ i + 1 ][ k ] );
-						pushVertex( v[ i ][ k ] );
-
-					} else {
-
-						pushVertex( v[ i ][ k + 1 ] );
-						pushVertex( v[ i + 1 ][ k + 1 ] );
-						pushVertex( v[ i + 1 ][ k ] );
-
-					}
-
-				}
-
-			}
-
-		}
-
-		function applyRadius( radius ) {
-
-			const vertex = new Vector3();
-
-			// iterate over the entire buffer and apply the radius to each vertex
-
-			for ( let i = 0; i < vertexBuffer.length; i += 3 ) {
-
-				vertex.x = vertexBuffer[ i + 0 ];
-				vertex.y = vertexBuffer[ i + 1 ];
-				vertex.z = vertexBuffer[ i + 2 ];
-
-				vertex.normalize().multiplyScalar( radius );
-
-				vertexBuffer[ i + 0 ] = vertex.x;
-				vertexBuffer[ i + 1 ] = vertex.y;
-				vertexBuffer[ i + 2 ] = vertex.z;
-
-			}
-
-		}
-
-		function generateUVs() {
-
-			const vertex = new Vector3();
-
-			for ( let i = 0; i < vertexBuffer.length; i += 3 ) {
-
-				vertex.x = vertexBuffer[ i + 0 ];
-				vertex.y = vertexBuffer[ i + 1 ];
-				vertex.z = vertexBuffer[ i + 2 ];
-
-				const u = azimuth( vertex ) / 2 / Math.PI + 0.5;
-				const v = inclination( vertex ) / Math.PI + 0.5;
-				uvBuffer.push( u, 1 - v );
-
-			}
-
-			correctUVs();
-
-			correctSeam();
-
-		}
-
-		function correctSeam() {
-
-			// handle case when face straddles the seam, see #3269
-
-			for ( let i = 0; i < uvBuffer.length; i += 6 ) {
-
-				// uv data of a single face
-
-				const x0 = uvBuffer[ i + 0 ];
-				const x1 = uvBuffer[ i + 2 ];
-				const x2 = uvBuffer[ i + 4 ];
-
-				const max = Math.max( x0, x1, x2 );
-				const min = Math.min( x0, x1, x2 );
-
-				// 0.9 is somewhat arbitrary
-
-				if ( max > 0.9 && min < 0.1 ) {
-
-					if ( x0 < 0.2 ) uvBuffer[ i + 0 ] += 1;
-					if ( x1 < 0.2 ) uvBuffer[ i + 2 ] += 1;
-					if ( x2 < 0.2 ) uvBuffer[ i + 4 ] += 1;
-
-				}
-
-			}
-
-		}
-
-		function pushVertex( vertex ) {
-
-			vertexBuffer.push( vertex.x, vertex.y, vertex.z );
-
-		}
-
-		function getVertexByIndex( index, vertex ) {
-
-			const stride = index * 3;
-
-			vertex.x = vertices[ stride + 0 ];
-			vertex.y = vertices[ stride + 1 ];
-			vertex.z = vertices[ stride + 2 ];
-
-		}
-
-		function correctUVs() {
-
-			const a = new Vector3();
-			const b = new Vector3();
-			const c = new Vector3();
-
-			const centroid = new Vector3();
-
-			const uvA = new Vector2();
-			const uvB = new Vector2();
-			const uvC = new Vector2();
-
-			for ( let i = 0, j = 0; i < vertexBuffer.length; i += 9, j += 6 ) {
-
-				a.set( vertexBuffer[ i + 0 ], vertexBuffer[ i + 1 ], vertexBuffer[ i + 2 ] );
-				b.set( vertexBuffer[ i + 3 ], vertexBuffer[ i + 4 ], vertexBuffer[ i + 5 ] );
-				c.set( vertexBuffer[ i + 6 ], vertexBuffer[ i + 7 ], vertexBuffer[ i + 8 ] );
-
-				uvA.set( uvBuffer[ j + 0 ], uvBuffer[ j + 1 ] );
-				uvB.set( uvBuffer[ j + 2 ], uvBuffer[ j + 3 ] );
-				uvC.set( uvBuffer[ j + 4 ], uvBuffer[ j + 5 ] );
-
-				centroid.copy( a ).add( b ).add( c ).divideScalar( 3 );
-
-				const azi = azimuth( centroid );
-
-				correctUV( uvA, j + 0, a, azi );
-				correctUV( uvB, j + 2, b, azi );
-				correctUV( uvC, j + 4, c, azi );
-
-			}
-
-		}
-
-		function correctUV( uv, stride, vector, azimuth ) {
-
-			if ( ( azimuth < 0 ) && ( uv.x === 1 ) ) {
-
-				uvBuffer[ stride ] = uv.x - 1;
-
-			}
-
-			if ( ( vector.x === 0 ) && ( vector.z === 0 ) ) {
-
-				uvBuffer[ stride ] = azimuth / 2 / Math.PI + 0.5;
-
-			}
-
-		}
-
-		// Angle around the Y axis, counter-clockwise when looking from above.
-
-		function azimuth( vector ) {
-
-			return Math.atan2( vector.z, - vector.x );
-
-		}
-
-
-		// Angle above the XZ plane.
-
-		function inclination( vector ) {
-
-			return Math.atan2( - vector.y, Math.sqrt( ( vector.x * vector.x ) + ( vector.z * vector.z ) ) );
-
-		}
-
-	}
-
-	copy( source ) {
-
-		super.copy( source );
-
-		this.parameters = Object.assign( {}, source.parameters );
-
-		return this;
-
-	}
-
-	static fromJSON( data ) {
-
-		return new PolyhedronGeometry( data.vertices, data.indices, data.radius, data.details );
-
-	}
-
-}
-
-class OctahedronGeometry extends PolyhedronGeometry {
-
-	constructor( radius = 1, detail = 0 ) {
-
-		const vertices = [
-			1, 0, 0, 	- 1, 0, 0,	0, 1, 0,
-			0, - 1, 0, 	0, 0, 1,	0, 0, - 1
-		];
-
-		const indices = [
-			0, 2, 4,	0, 4, 3,	0, 3, 5,
-			0, 5, 2,	1, 2, 5,	1, 5, 3,
-			1, 3, 4,	1, 4, 2
-		];
-
-		super( vertices, indices, radius, detail );
-
-		this.type = 'OctahedronGeometry';
-
-		this.parameters = {
-			radius: radius,
-			detail: detail
-		};
-
-	}
-
-	static fromJSON( data ) {
-
-		return new OctahedronGeometry( data.radius, data.detail );
-
-	}
-
-}
-
 class MeshStandardMaterial extends Material {
 
 	constructor( parameters ) {
@@ -36386,84 +36039,6 @@ class Spherical {
 
 }
 
-const _vector$1 = /*@__PURE__*/ new Vector3();
-const _color1 = /*@__PURE__*/ new Color();
-const _color2 = /*@__PURE__*/ new Color();
-
-class HemisphereLightHelper extends Object3D {
-
-	constructor( light, size, color ) {
-
-		super();
-
-		this.light = light;
-
-		this.matrix = light.matrixWorld;
-		this.matrixAutoUpdate = false;
-
-		this.color = color;
-
-		this.type = 'HemisphereLightHelper';
-
-		const geometry = new OctahedronGeometry( size );
-		geometry.rotateY( Math.PI * 0.5 );
-
-		this.material = new MeshBasicMaterial( { wireframe: true, fog: false, toneMapped: false } );
-		if ( this.color === undefined ) this.material.vertexColors = true;
-
-		const position = geometry.getAttribute( 'position' );
-		const colors = new Float32Array( position.count * 3 );
-
-		geometry.setAttribute( 'color', new BufferAttribute( colors, 3 ) );
-
-		this.add( new Mesh( geometry, this.material ) );
-
-		this.update();
-
-	}
-
-	dispose() {
-
-		this.children[ 0 ].geometry.dispose();
-		this.children[ 0 ].material.dispose();
-
-	}
-
-	update() {
-
-		const mesh = this.children[ 0 ];
-
-		if ( this.color !== undefined ) {
-
-			this.material.color.set( this.color );
-
-		} else {
-
-			const colors = mesh.geometry.getAttribute( 'color' );
-
-			_color1.copy( this.light.color );
-			_color2.copy( this.light.groundColor );
-
-			for ( let i = 0, l = colors.count; i < l; i ++ ) {
-
-				const color = ( i < ( l / 2 ) ) ? _color1 : _color2;
-
-				colors.setXYZ( i, color.r, color.g, color.b );
-
-			}
-
-			colors.needsUpdate = true;
-
-		}
-
-		this.light.updateWorldMatrix( true, false );
-
-		mesh.lookAt( _vector$1.setFromMatrixPosition( this.light.matrixWorld ).negate() );
-
-	}
-
-}
-
 class GridHelper extends LineSegments {
 
 	constructor( size = 10, divisions = 10, color1 = 0x444444, color2 = 0x888888 ) {
@@ -36507,90 +36082,6 @@ class GridHelper extends LineSegments {
 
 		this.geometry.dispose();
 		this.material.dispose();
-
-	}
-
-}
-
-const _v1 = /*@__PURE__*/ new Vector3();
-const _v2$1 = /*@__PURE__*/ new Vector3();
-const _v3 = /*@__PURE__*/ new Vector3();
-
-class DirectionalLightHelper extends Object3D {
-
-	constructor( light, size, color ) {
-
-		super();
-
-		this.light = light;
-
-		this.matrix = light.matrixWorld;
-		this.matrixAutoUpdate = false;
-
-		this.color = color;
-
-		this.type = 'DirectionalLightHelper';
-
-		if ( size === undefined ) size = 1;
-
-		let geometry = new BufferGeometry();
-		geometry.setAttribute( 'position', new Float32BufferAttribute( [
-			- size, size, 0,
-			size, size, 0,
-			size, - size, 0,
-			- size, - size, 0,
-			- size, size, 0
-		], 3 ) );
-
-		const material = new LineBasicMaterial( { fog: false, toneMapped: false } );
-
-		this.lightPlane = new Line( geometry, material );
-		this.add( this.lightPlane );
-
-		geometry = new BufferGeometry();
-		geometry.setAttribute( 'position', new Float32BufferAttribute( [ 0, 0, 0, 0, 0, 1 ], 3 ) );
-
-		this.targetLine = new Line( geometry, material );
-		this.add( this.targetLine );
-
-		this.update();
-
-	}
-
-	dispose() {
-
-		this.lightPlane.geometry.dispose();
-		this.lightPlane.material.dispose();
-		this.targetLine.geometry.dispose();
-		this.targetLine.material.dispose();
-
-	}
-
-	update() {
-
-		this.light.updateWorldMatrix( true, false );
-		this.light.target.updateWorldMatrix( true, false );
-
-		_v1.setFromMatrixPosition( this.light.matrixWorld );
-		_v2$1.setFromMatrixPosition( this.light.target.matrixWorld );
-		_v3.subVectors( _v2$1, _v1 );
-
-		this.lightPlane.lookAt( _v2$1 );
-
-		if ( this.color !== undefined ) {
-
-			this.lightPlane.material.color.set( this.color );
-			this.targetLine.material.color.set( this.color );
-
-		} else {
-
-			this.lightPlane.material.color.copy( this.light.color );
-			this.targetLine.material.color.copy( this.light.color );
-
-		}
-
-		this.targetLine.lookAt( _v2$1 );
-		this.targetLine.scale.z = _v3.length();
 
 	}
 
@@ -44134,17 +43625,17 @@ labelRenderer.domElement.style.pointerEvents = "none";
 labelRenderer.domElement.style.top = "0";
 document.body.appendChild(labelRenderer.domElement);
 
-const base = document.createElement("div");
-base.className = "base-label";
+// const base = document.createElement("div");
+// base.className = "base-label";
 
-const deleteButton = document.createElement("button");
-deleteButton.textContent = "X";
-deleteButton.className = "button hidden";
-base.appendChild(deleteButton);
+// const deleteButton = document.createElement("button");
+// deleteButton.textContent = "X";
+// deleteButton.className = "button hidden";
+// base.appendChild(deleteButton);
 
-const baseObject = new CSS2DObject(base);
-baseObject.position.set(0, 1, 0);
-scene.add(baseObject);
+// const baseObject = new CSS2DObject(base);
+// baseObject.position.set(0, 1, 0);
+// scene.add(baseObject);
 
 // -----------------------------------------------------
 // load building
@@ -44154,12 +43645,14 @@ const modelLoader = new GLTFLoader();
 const modelLoadingElem = document.querySelector("#loader-container");
 const modelLoadingText = modelLoadingElem.querySelector("p");
 
+let model;
+
 modelLoader.load(
     "./GLTF/police_station.glb",
 
     (gltf) => {
         modelLoadingElem.style.display = "none";
-        const model = gltf.scene;
+        model = gltf.scene;
         scene.add(model);
         // model.position.setZ(5);
         model.position.setY(-8);
@@ -44196,7 +43689,7 @@ scene.add(camera);
 const renderer = new WebGLRenderer({ canvas });
 
 renderer.render(scene, camera);
-renderer.setPixelRatio(2);
+renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); // this renders crisp on load
 
 // -----------------------------------------------------
@@ -44204,28 +43697,59 @@ renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); // this render
 // -----------------------------------------------------
 
 const light = new DirectionalLight();
-new DirectionalLightHelper(light, 1);
 light.position.set(1, 20, 1).normalize();
 scene.add(light);
+// const lightHelper = new DirectionalLightHelper(light, 1);
 // scene.add(lightHelper);
 
 const hemisphereLight = new HemisphereLight(0xffffff, 0x5533ff);
 scene.add(hemisphereLight);
-new HemisphereLightHelper(hemisphereLight);
+// const hemisphereLightHelper = new HemisphereLightHelper(hemisphereLight);
 // scene.add(hemisphereLightHelper);
 
 // -----------------------------------------------------
 // create raycaster
 // -----------------------------------------------------
 
-// const raycaster = new Raycaster();
-// const rayOrigin = new Vector3(-3, 0, 0);
-// const rayDirection = new Vector3(10, 0, 0);
-// rayDirection.normalize();
-// raycaster.set(rayOrigin, rayDirection);
+const raycaster = new Raycaster();
+const mouse = new Vector2();
 
-// const intersect = raycaster.intersectObject(cube);
-// const intersects = raycaster.intersectObjects([cube, bigCube, smallCube]);
+window.addEventListener("dblclick", (event) => {
+    mouse.x = (event.clientX / canvas.clientWidth) * 2 - 1;
+    mouse.y = (event.clientY / canvas.clientHeight) * -2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(model);
+    const location = intersects[0].point;
+
+    const result = window.prompt("Add comment:");
+
+    console.log(location);
+
+    const base = document.createElement("div");
+    base.className = "base-label";
+
+    const deleteButton = document.createElement("button");
+    deleteButton.textContent = "X";
+    deleteButton.className = "delete-button hidden";
+    base.appendChild(deleteButton);
+
+    const postit = document.createElement("div");
+    postit.className = "label";
+    postit.textContent = result;
+    base.appendChild(postit);
+
+    const ifcJsTitle = new CSS2DObject(base);
+    ifcJsTitle.position.copy(location);
+    scene.add(ifcJsTitle);
+    // console.log(ifcJsTitle);
+
+    deleteButton.onclick = () => {
+        base.remove();
+        ifcJsTitle.element = null;
+        ifcJsTitle.removeFromParent();
+    };
+});
 
 // -----------------------------------------------------
 // resize canvas with client window

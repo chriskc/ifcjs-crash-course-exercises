@@ -339,7 +339,8 @@ scene.add(camera);
 const renderer = new WebGLRenderer({ canvas });
 
 renderer.render(scene, camera);
-renderer.setPixelRatio(2);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); // this renders crisp on load
 
 // -----------------------------------------------------
 // create lights
