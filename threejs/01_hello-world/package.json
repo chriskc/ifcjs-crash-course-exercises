@@ -17,6 +17,7 @@
     "dependencies": {
         "camera-controls": "^2.7.0",
         "gsap": "^3.12.2",
+        "stats.js": "^0.17.0",
         "three": "^0.155.0"
     },
     "type": "module"
