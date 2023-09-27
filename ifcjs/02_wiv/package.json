@@ -1,5 +1,5 @@
 {
-    "name": "01_wit",
+    "name": "02_wiv",
     "version": "1.0.0",
     "description": "",
     "main": "./script.js",
@@ -17,6 +17,6 @@
     },
     "dependencies": {
         "three": "^0.135.0",
-        "web-ifc-three": "^0.0.118"
+        "web-ifc-viewer": "^1.0.207"
     }
 }
